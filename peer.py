@@ -1,7 +1,6 @@
 import json
 from socket import socket
 from time import time
-import uuid
 
 
 class Peer:
@@ -47,7 +46,7 @@ class Peer:
 		).encode())
 	
 
-	def gossip(self, sock: socket, host, port, name) -> None:
+	def gossip(self, sock: socket, host, port, name, id) -> None:
 		"""
 		Compose and send a new GOSSIP to this peer
 		Use host, port and name as current node's info
@@ -58,7 +57,7 @@ class Peer:
 				"host": host,
 				"port": port,
 				"name": name,
-				"messageID": str(uuid.uuid4()),
+				"messageID": id,
 			}
 		).encode())
 
