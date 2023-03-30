@@ -16,7 +16,7 @@ class Peer:
 	
 
 	def __str__(self):
-		return f"<Peer name={self.name}, host={self.host}, port={self.port}"\
+		return f"<Peer name={self.name}, host={self.host}, port={self.port}>"
 	
 
 	def __repr__(self) -> str:
