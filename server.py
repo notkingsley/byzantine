@@ -4,11 +4,11 @@ import selectors
 from threading import Thread
 
 from cli_server import CLIServer
-from db_server import DBServer
+from consensus_server import ConsensusServer
 from gossip_server import GossipServer
 
 
-class Server(GossipServer, CLIServer, DBServer):
+class Server(GossipServer, CLIServer, ConsensusServer):
 	"""
 	A Server combines all the features from base server classes
 	and does the listening and selecting
@@ -43,9 +43,13 @@ class Server(GossipServer, CLIServer, DBServer):
 			self.query_received(addr)
 		
 		elif command == "QUERY-REPLY":
-			self.query_reply_received(
-				json.loads(data["database"].replace("None", "null"))
-			)
+			self.query_reply_received(data["database"])
+		
+		elif command == "CONSENSUS":
+			self.consensus_received(data, addr)
+		
+		elif command == "CONSENSUS-REPLY":
+			self.consensus_reply_received(data, addr)
 		
 		else:
 			logging.debug(f"Unexpected command received: {command}")
@@ -72,7 +76,7 @@ class Server(GossipServer, CLIServer, DBServer):
 						connection, client = self.cli_server.accept()
 						connection.setblocking(False)
 						logging.debug(f"Client {client} connected.")
-						connection.sendall(b"Hola!! You know what to do.\n>>> ")
+						connection.sendall(b"Hola, Let's goooo!!\n>>> ")
 						self.selector.register(connection, selectors.EVENT_READ)
 
 					else:

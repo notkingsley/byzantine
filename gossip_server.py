@@ -10,9 +10,9 @@ from locked import Locked
 from peer import Peer, WELL_KNOWN_PEERS
 
 
-GOSSIP_INTERVAL = 10
-PRUNE_INTERVAL = 15
-PRUNE_TIMEOUT = 20
+GOSSIP_INTERVAL = 30
+PRUNE_INTERVAL = 45
+PRUNE_TIMEOUT = 60
 FORWARD_AMOUNT = 3
 
 
@@ -116,6 +116,17 @@ class PeerServer(BaseServer):
 		sock.sendall(self.format_peers().encode() + b"\n")
 
 
+	def find_peer(self, host, port):
+		"""
+		Find and return the existing Peer with address host:post
+		Return None if none exists
+		"""
+		for peer in self.get_peers():
+			if peer.host == host and peer.port == port:
+				return peer
+		return None
+
+
 class GossipServer(PeerServer):
 	"""
 	A GossipServer is a PeerServer that can join newtorks
@@ -174,7 +185,7 @@ class GossipServer(PeerServer):
 		
 		if peer:
 			# never block while holding lock
-			logging.debug(f"{peer} gossiped. Updated records")
+			# logging.debug(f"{peer} gossiped. Updated records")
 			sample = random.sample(peers, min(FORWARD_AMOUNT, len(peers)))
 			with self.sock.lock:
 				gossip.forward(sample, self.sock.obj)
@@ -210,7 +221,7 @@ class GossipServer(PeerServer):
 		sleep(3)
 		while True:
 			peers = self.get_peers()
-			logging.debug(f"Gossiping to {len(peers)} known peers")
+			# logging.debug(f"Gossiping to {len(peers)} known peers")
 			self.gossip(peers)
 			
 			sleep(GOSSIP_INTERVAL)

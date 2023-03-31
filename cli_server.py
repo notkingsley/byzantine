@@ -39,7 +39,7 @@ class CLIServer(AbstractBaseServer):
 		and args are the arguments, dispatch to the necessary function
 		"""
 		func = getattr(self, "cli_" + command, None)
-		if not func:
+		if not func or command == "server":
 			sock.sendall(f"We don't do that here: {command}\n".encode())
 		
 		else:

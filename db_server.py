@@ -29,12 +29,21 @@ class Database:
 		Return the word at index. 
 		A wrong word is returned if we're lying
 		"""
-		with self._db.lock:
-			word = self._db.obj[index]
+		word = self.get_no_lie(index)
 		if self.lying:
-			word += " lie"
+			if word == "fallacy":
+				return "truth"
+			return "fallacy"
 		return word
 	
+
+	def get_no_lie(self, index: int) -> str:
+		"""
+		Return the correct word at index, irrespective of lying
+		"""
+		with self._db.lock:
+			return self._db.obj[index]
+
 
 	def set(self, index: int, word: str):
 		"""
@@ -97,7 +106,7 @@ class DBServer(PeerServer):
 		init.start()
 	
 
-	def send_set(self, index: int, word: str):
+	def set_and_send(self, index: int, word: str):
 		"""
 		Update db and broadcast SET command to all known peers
 		"""
@@ -167,10 +176,10 @@ class DBServer(PeerServer):
 		reply = json.dumps(
 			{
 				"command": "QUERY-REPLY",
-				"database": str(self.db.all()),
+				"database": self.db.all(),
 			}
 		).encode()
-		logging.debug(f"Replying query with {reply}")
+		# logging.debug(f"Replying query with {reply}")
 		with self.sock.lock:
 			self.sock.obj.sendto(reply, addr)
 	
@@ -212,5 +221,5 @@ class DBServer(PeerServer):
 		Send SET command to all known peers
 		"""
 		sock.sendall(f"Setting {index} to {word}...\n".encode())
-		self.send_set(int(index), str(word))
+		self.set_and_send(int(index), str(word))
 		sock.sendall(b"Done!\n")
