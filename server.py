@@ -4,10 +4,11 @@ import selectors
 from threading import Thread
 
 from cli_server import CLIServer
+from db_server import DBServer
 from gossip_server import GossipServer
 
 
-class Server(GossipServer, CLIServer):
+class Server(GossipServer, CLIServer, DBServer):
 	"""
 	A Server combines all the features from base server classes
 	and does the listening and selecting
@@ -35,8 +36,19 @@ class Server(GossipServer, CLIServer):
 		elif command == "GOSSIP_REPLY":
 			self.gossip_reply_received(data)
 		
+		elif command == "SET":
+			self.set(data["index"], data["value"])
+		
+		elif command == "QUERY":
+			self.query_received(addr)
+		
+		elif command == "QUERY-REPLY":
+			self.query_reply_received(
+				json.loads(data["database"].replace("None", "null"))
+			)
+		
 		else:
-			logging.debug(f"Invalid command received: {command}")
+			logging.debug(f"Unexpected command received: {command}")
 	
 
 	def start(self):
@@ -60,13 +72,28 @@ class Server(GossipServer, CLIServer):
 						connection, client = self.cli_server.accept()
 						connection.setblocking(False)
 						logging.debug(f"Client {client} connected.")
-						connection.sendall(b"Hola!! You know what to do.\n")
+						connection.sendall(b"Hola!! You know what to do.\n>>> ")
 						self.selector.register(connection, selectors.EVENT_READ)
 
 					else:
 						data: bytes = event.fileobj.recv(4096)
 						# logging.debug(f"Got {data}")
 						self.dispatch(event.fileobj, *data.decode().strip().split())
+						try:
+							event.fileobj.sendall(b">>> ")
+						except OSError:
+							# exit command and socket has been closed
+							pass
 					
 		finally:
 			super()._stop()
+	
+
+	def cli_exit(self, sock):
+		"""
+		Close the client connected over sock
+		"""
+		sock.sendall("Later, loser!".encode() + b"\n")
+		logging.debug(f"Client {sock.getsockname()} disconnected.")
+		self.selector.unregister(sock)
+		sock.close()

@@ -60,7 +60,7 @@ class PeerServer(BaseServer):
 		Return the associated Peer object or None if I've been whispering to myself
 		"""
 		if data["name"] == self.name:
-			logging.debug("Sometimes, I feel like I'm talking to myself")
+			# logging.debug("Sometimes, I feel like I'm talking to myself")
 			return None
 
 		with self.peers.lock:
@@ -108,6 +108,14 @@ class PeerServer(BaseServer):
 			return f"{[f(peer) for peer in self.peers.obj.values()]}"
 
 
+	def cli_peers(self, sock):
+		"""
+		peers command received from the client over sock
+		Lists all known peers
+		"""
+		sock.sendall(self.format_peers().encode() + b"\n")
+
+
 class GossipServer(PeerServer):
 	"""
 	A GossipServer is a PeerServer that can join newtorks
@@ -123,7 +131,6 @@ class GossipServer(PeerServer):
 		Start the gossiper thread
 		Do not call this funtion directly
 		"""
-		logging.debug("Starting gossiper")
 		super()._start()
 		self.gossip_quit = Event()
 		gossiper = Thread(
@@ -139,7 +146,6 @@ class GossipServer(PeerServer):
 		Complement of _start. Stops but does not wait for the gossiper
 		Do not call directly
 		"""
-		logging.debug("Stopping gossiper")
 		super()._stop()
 		self.gossip_quit.set()
 

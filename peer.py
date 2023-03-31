@@ -59,6 +59,19 @@ class Peer:
 				"messageID": id,
 			}
 		).encode())
+	
+
+	def set(self, sock: socket, index, value) -> None:
+		"""
+		Compose and send a SET command to this peer
+		"""
+		self.send(sock, json.dumps(
+			{
+				"command": "SET",
+				"index": index,
+				"value": value,
+			}
+		).encode())
 
 
 WELL_KNOWN_PEERS = [

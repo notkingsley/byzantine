@@ -33,9 +33,6 @@ class CLIServer(AbstractBaseServer):
 		self.cli_server.close()
 
 
-	def format_peers(self) -> str: ...
-	
-
 	def dispatch(self, sock: socket.socket, command: str = "", *args):
 		"""
 		command was received from the cli over the sock connection 
@@ -43,9 +40,10 @@ class CLIServer(AbstractBaseServer):
 		"""
 		func = getattr(self, "cli_" + command, None)
 		if not func:
-			sock.sendall(f"I don't seem to implement that command: {command}\n".encode())
+			sock.sendall(f"We don't do that here: {command}\n".encode())
 		
 		else:
+			# cli_ methods are defined in other server classes
 			func(sock, *args)
 	
 
@@ -53,21 +51,3 @@ class CLIServer(AbstractBaseServer):
 		"""
 		No command; no-op
 		"""
-	
-
-	def cli_peers(self, sock: socket.socket):
-		"""
-		peers command received from the client
-		Lists all known peers
-		"""
-		sock.sendall(self.format_peers().encode() + b"\n")
-	
-
-	def cli_exit(self, sock: socket.socket):
-		"""
-		Close this client
-		"""
-		sock.sendall("Later, loser!".encode() + b"\n")
-		logging.debug(f"Client {sock.getsockname()} disconnected.")
-		self.selector.unregister(sock)
-		sock.close()
