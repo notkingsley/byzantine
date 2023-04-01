@@ -11,7 +11,7 @@ from peer import Peer, WELL_KNOWN_PEERS
 from peer_server import PeerServer
 
 
-GOSSIP_INTERVAL = 30
+GOSSIP_INTERVAL = 60
 FORWARD_AMOUNT = 3
 
 

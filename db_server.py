@@ -11,6 +11,8 @@ from peer_server import PeerServer
 
 
 DB_SIZE = 5
+LIE_WORD = "fallacy"
+OTHER_LIE_WORD = "truth"
 
 
 class Database:
@@ -31,9 +33,9 @@ class Database:
 		"""
 		word = self.get_no_lie(index)
 		if self.lying:
-			if word == "fallacy":
-				return "truth"
-			return "fallacy"
+			if word == LIE_WORD:
+				return OTHER_LIE_WORD
+			return LIE_WORD
 		return word
 	
 

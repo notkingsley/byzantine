@@ -7,8 +7,8 @@ from locked import Locked
 from peer import Peer
 
 
-PRUNE_INTERVAL = 45
-PRUNE_TIMEOUT = 60
+PRUNE_INTERVAL = 90
+PRUNE_TIMEOUT = 120
 
 
 class PeerServer(BaseServer):

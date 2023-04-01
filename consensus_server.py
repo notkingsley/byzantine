@@ -19,8 +19,17 @@ class Consensus:
 	"""
 	A Consensus object represents a live consensus
 	"""
-	def __init__(self, OM: int, index: int, value: str, peers: list[Peer], id: str, due: float):
-		self.value = value
+	def __init__(
+		self,
+		OM: int,
+		index: int,
+		value: str,
+		received: str,
+		peers: list[Peer],
+		id: str,
+		due: float
+	):
+		self.received = received
 		self.peers = peers
 		self.due = due
 		self.msg = json.dumps(
@@ -59,8 +68,8 @@ class Consensus:
 			# logging.debug(f"Consensus results: {list(self.replies.obj.elements())}")
 			if not self.replies.obj.total():
 				logging.error("Nobody replied :(")
-				return self.value
 
+			self.replies.obj[self.received] += 1
 			return self.replies.obj.most_common(1)[0][0]
 		
 
@@ -86,13 +95,21 @@ class ConsensusServer(DBServer):
 		self.consensuses: Locked[dict[str: Consensus]] = Locked(dict())
 	
 
-	def do_consensus(self, OM: int, index: int, value: str, peers: list[Peer], due: float):
+	def do_consensus(
+		self,
+		OM: int,
+		index: int,
+		value: str,
+		received: str,
+		peers: list[Peer],
+		due: float
+	):
 		"""
 		Run a (sub-)consensus with given parameters.
-		Update db and return majority value
+		Update db and return the correct majority value
 		"""
 		id = str(uuid.uuid4())
-		consensus = Consensus(OM, index, value, peers, id, due)
+		consensus = Consensus(OM, index, value, received, peers, id, due)
 		with self.consensuses.lock:
 			self.consensuses.obj[id] = consensus
 
@@ -111,7 +128,8 @@ class ConsensusServer(DBServer):
 		return self.do_consensus(
 			self.determine_OM(),
 			index,
-			self.db.get_no_lie(index),
+			self.db.get(index),
+			None,
 			self.get_peers(),
 			time() + CONSENSUS_TIME
 		)
@@ -128,15 +146,17 @@ class ConsensusServer(DBServer):
 	def consensus_received(self, data: dict, addr):
 		"""
 		A CONSENSUS command was received; data["command"] == "CONSENSUS"
+		We don't actually run the sub-consensus if we're lying
 		"""
 		# logging.debug(f"Got consensus with OM({data['OM']})")
-		if not data["OM"]:
+		if not data["OM"] or self.db.lying:
 			word = self.db.get(data["index"])
 
 		else:
 			word = self.do_consensus(
 				data["OM"] - 1,
 				data["index"],
+				self.db.get(data["index"]),
 				data["value"],
 				[Peer("", *peer.split(":")) for peer in data["peers"]],
 				data["due"],
