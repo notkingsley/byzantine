@@ -10,8 +10,8 @@ from gossip_server import GossipServer
 
 class Server(GossipServer, CLIServer, ConsensusServer):
 	"""
-	A Server combines all the features from base server classes
-	and does the listening and selecting
+	A Server manages the selector and multiplexes between
+	the functionalities of the base server classes.
 	"""
 	def __init__(self) -> None:
 		super().__init__()
@@ -56,6 +56,10 @@ class Server(GossipServer, CLIServer, ConsensusServer):
 	
 
 	def start(self):
+		"""
+		Run forever
+		Everything passes through here and dispatched appropriately
+		"""
 		try:
 			super()._start()
 			while True:
@@ -63,6 +67,7 @@ class Server(GossipServer, CLIServer, ConsensusServer):
 
 				for event, _ in events:
 					if event.fileobj == self.sock.obj:
+						# message from UDP port
 						with self.sock.lock:
 							data, addr = self.sock.obj.recvfrom(4096)
 							handler = Thread(
@@ -73,21 +78,27 @@ class Server(GossipServer, CLIServer, ConsensusServer):
 							handler.start()
 
 					elif event.fileobj == self.cli_server:
+						# new CLI client
 						connection, client = self.cli_server.accept()
 						connection.setblocking(False)
-						logging.debug(f"Client {client} connected.")
 						connection.sendall(b"Hola, Let's goooo!!\n>>> ")
+
+						logging.debug(f"Client {client} connected.")
 						self.selector.register(connection, selectors.EVENT_READ)
 
 					else:
+						# message from CLI client
 						data: bytes = event.fileobj.recv(4096)
 						# logging.debug(f"Got {data}")
 						self.dispatch(event.fileobj, *data.decode().strip().split())
+
 						try:
 							event.fileobj.sendall(b">>> ")
 						except OSError:
-							# exit command and socket has been closed
-							pass
+							pass # socket closed
+		
+		except KeyboardInterrupt:
+			logging.debug("Interrupted, exiting...")
 					
 		finally:
 			super()._stop()
@@ -97,7 +108,7 @@ class Server(GossipServer, CLIServer, ConsensusServer):
 		"""
 		Close the client connected over sock
 		"""
-		sock.sendall("Later, loser!".encode() + b"\n")
+		sock.sendall("Later, mater!".encode() + b"\n")
 		logging.debug(f"Client {sock.getsockname()} disconnected.")
 		self.selector.unregister(sock)
 		sock.close()
