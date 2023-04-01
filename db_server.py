@@ -7,7 +7,7 @@ from threading import Thread
 from time import sleep
 
 from locked import Locked
-from gossip_server import PeerServer
+from peer_server import PeerServer
 
 
 DB_SIZE = 5
